@@ -1,0 +1,3 @@
+conda create -n $proj_name .....relay.....
+conda activate $proj_name
+python first_try.py True/False
