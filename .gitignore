@@ -1,0 +1,4 @@
+*.zip
+datas/MNIST/
+*.pth
+.vscode/
