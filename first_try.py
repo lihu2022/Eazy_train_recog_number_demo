@@ -4,6 +4,8 @@ from torchvision import transforms
 from torchvision.datasets import MNIST
 import matplotlib.pyplot as plt
 import sys
+import time
+# import os
 # import numpy as np
 
 # xp = np.arange(0, 5, 0.1)
@@ -11,7 +13,7 @@ import sys
 # plt.plot(xp, yp)
 # plt.show()
 
-class Net(torch.nn.Module) :
+class FC_Net(torch.nn.Module) :
     def __init__(self):
         super().__init__()
         self.fc1 = torch.nn.Linear(28*28, 64)
@@ -28,18 +30,60 @@ class Net(torch.nn.Module) :
         return x
     
 
+
+class CNN_Net(torch.nn.Module):
+    def __init__(self):
+        super(CNN_Net, self).__init__()
+        # 假设输入图像是单通道的 28x28 图像
+        # 定义两个卷积层
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        # 卷积后，图像的尺寸并未改变
+        
+        # 仅为示例，没有考虑卷积之后的具体大小变化，
+        # 可能需要调整参数以符合实际大小。
+        # 加入池化层后图像尺寸为：[batch, 64, 14, 14]
+        # 接下来使用线性层，需要先将数据展平
+        self.fc1 = torch.nn.Linear(64 * 14 * 14, 64) 
+        # self.fc2 = torch.nn.Linear(64, 64)
+        # self.fc3 = torch.nn.Linear(64, 64)
+        self.fc4 = torch.nn.Linear(64, 10)
+
+    def forward(self, x):
+        # 应用卷积层和 ReLU 非线性
+        x = torch.nn.functional.relu(self.conv1(x))
+        x = torch.nn.functional.relu(torch.nn.functional.max_pool2d(self.conv2(x), 2))
+        
+        # 展平
+        x = x.view(-1, 64 * 14 * 14)
+        
+        # 应用全连接层和 ReLU 非线性
+        x = torch.nn.functional.relu(self.fc1(x))
+        # x = torch.nn.functional.relu(self.fc2(x))
+        # x = torch.nn.functional.relu(self.fc3(x))
+        
+        # 最后一层不进行 ReLU，直接 softmax
+        x = torch.nn.functional.softmax(self.fc4(x), dim=1)
+
+        return x
+    
+
 def Get_Download_data(is_train):
     to_sensor = transforms.Compose([transforms.ToTensor()])
     data_set = MNIST("./datas", is_train, transform = to_sensor, download = True)
     return DataLoader(data_set, batch_size = 15, shuffle=True)
 
 
-def evaluate_accuracy(test_data, net):
+def evaluate_accuracy(test_data, net, use_cnn):
     n_current = 0
     n_total = 0
     with torch.no_grad():
         for (x, y) in test_data:
-            outputs = net.forward(x.view(-1, 28*28))
+            if (use_cnn):
+                outputs = net.forward(x.view(-1, 1, 28, 28))
+            else:
+                outputs = net.forward(x.view(-1, 28*28))
+
             for i, output in enumerate(outputs):
                 if torch.argmax(output) == y[i]:
                     n_current += 1
@@ -47,34 +91,46 @@ def evaluate_accuracy(test_data, net):
     return n_current / n_total
 
 
-def main(is_infer):
+def main(is_infer, use_cnn):
     train_data = Get_Download_data(is_train = True)
     test_data = Get_Download_data(is_train = False)
-    net = Net()
+
+    if (use_cnn):
+        net = CNN_Net()
+    else:
+        net = FC_Net()
+
     if (is_infer) :
         print("model is trained , now starting inferencing!!!!!")
         state_dic = torch.load('max_params.pth', weights_only= True)
         net.load_state_dict(state_dic)
         net.eval()
-        print("now max params inference accuracy is : ", evaluate_accuracy(test_data, net))
+        print("now max params inference accuracy is : ", evaluate_accuracy(test_data, net, use_cnn))
     else:
 
 
-        print("initial accuracy : ", evaluate_accuracy(test_data, net))
+        print("initial accuracy : ", evaluate_accuracy(test_data, net, use_cnn))
 
         optimizer = torch.optim.Adam(net.parameters(), lr = 0.001)
 
 
         max_accyracy = -1
-        for epoch in range (10):
+        start_time = time.time()
+        for epoch in range (3):
                 for (x, y) in train_data:
                     net.zero_grad()
-                    output = net.forward(x.view(-1, 28*28))
+                    if (use_cnn):
+                        output = net.forward(x.view(-1, 1, 28, 28))
+                    else:
+                        output = net.forward(x.view(-1, 28*28))
+
                     loss = torch.nn.functional.nll_loss(output, y)
                     loss.backward()
                     optimizer.step()
 
-                now_accuracy = evaluate_accuracy(test_data, net)
+                end_time = time.time()
+
+                now_accuracy = evaluate_accuracy(test_data, net, use_cnn)
                 if (now_accuracy > max_accyracy):
                     max_accyracy = now_accuracy
                     torch.save(net.state_dict(), 'max_params.pth')
@@ -82,6 +138,11 @@ def main(is_infer):
                 
                 
                 print ("epoch :", epoch, "now_accyracy: ", now_accuracy, "max_accuracy", max_accyracy)
+                
+                if (use_cnn):
+                    print ("use cnn opoch  ", epoch, "time consume:", end_time - start_time)
+                else:
+                    print ("use fc opoch  ", epoch, "time consume:", end_time - start_time)
             
             
                 
@@ -101,18 +162,26 @@ def main(is_infer):
     for (n, (x, _)) in enumerate(test_data):
         if n > 5:
             break
-        predict = torch.argmax(net.forward(x[0].view(-1, 28*28)))
+
+        if (use_cnn):
+            predict = torch.argmax(net.forward(x[0].view(-1, 1,28, 28)))
+        else:
+            predict = torch.argmax(net.forward(x[0].view(-1, 28*28)))
+
         plt.figure(n)
         plt.imshow(x[0].view(28, 28))
         plt.title("prediction: " + str(int(predict)))
     plt.show()
+    # os.system(["pause"])
 
 
 if __name__ == "__main__":
 
     is_infer = False
-    if (len(sys.argv) < 2):
-        print("error, correct run this : python first_try.py True/False")
+    use_cnn = False
+    if (len(sys.argv) < 3):
+        print("1.error, correct run this : python first_try.py True/False ")
+        print("2. please confirm if use cnn")
         sys.exit(1)
     
     if (sys.argv[1] == "False"):
@@ -120,8 +189,13 @@ if __name__ == "__main__":
     else:
         is_infer = True
 
+    if (sys.argv[2]) == "use_cnn":
+        use_cnn = True
+    else:
+        use_cnn = False
 
-    main(is_infer)
+
+    main(is_infer, use_cnn)
 
                 
 
