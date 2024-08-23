@@ -1,6 +1,7 @@
 #this project is a eazy demo about cnn network and linear perception
 
 ##start
+
 conda create -n $proj_name .....relay.....
 
 conda activate $proj_name
