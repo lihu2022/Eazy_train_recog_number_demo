@@ -13,7 +13,7 @@ import time
 # plt.plot(xp, yp)
 # plt.show()
 
-class FC_Net(torch.nn.Module) :
+class FC_Net(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.fc1 = torch.nn.Linear(28*28, 64)
@@ -44,7 +44,7 @@ class CNN_Net(torch.nn.Module):
         # 可能需要调整参数以符合实际大小。
         # 加入池化层后图像尺寸为：[batch, 64, 14, 14]
         # 接下来使用线性层，需要先将数据展平
-        self.fc1 = torch.nn.Linear(64 * 14 * 14, 64) 
+        self.fc1 = torch.nn.Linear(64 * 14 * 14, 64)
         # self.fc2 = torch.nn.Linear(64, 64)
         # self.fc3 = torch.nn.Linear(64, 64)
         self.fc4 = torch.nn.Linear(64, 10)
