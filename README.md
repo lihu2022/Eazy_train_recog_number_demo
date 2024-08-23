@@ -2,7 +2,7 @@
 
 ##start
 
-conda create -n $proj_name .....relay.....
+conda env create -n $proj_name -f env.yaml 
 
 conda activate $proj_name
 
