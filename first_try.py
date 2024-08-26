@@ -14,23 +14,25 @@ import time
 # plt.show()
 
 class FC_Net(torch.nn.Module):
-    #初始化全连接神经网络，总参数
-    #total params：(50192+8192+640)*2=118048
+    #初始化全连接神经网络，总参数。
+    #进行修改参数，谨记神经网络的偏置项是每一层的输出层的个数，而不是跟随比例系数一样是对应输入神经元的个数，进行修改，只是为了保证模型可以不一定要过零点，从而引入更细致的拟合。
+    #total params：50176+8192+640+64+64+64+10=59210
     def __init__(self):
         super().__init__()
-        #输入层：将像素为28*28分辨率的照片展成一纵列，全连接到第二层network为64个神经元
-        #params：50176
+        #输入层：将像素为28*28分辨率的照片展成一纵列，全连接到第二层network为64个神经元，偏置项是第二层
+        #params：50176+64
         self.fc1 = torch.nn.Linear(28*28, 64)
         #中间层：设置两层中间层都为64神经元，不改变维度大小
-        #params：8192
+        #params：8192+64+64
         self.fc2 = torch.nn.Linear(64, 64)
         self.fc3 = torch.nn.Linear(64, 64)
         #输出层：将神经元连接到输出层，输出十个数字的概率。
-        #params:640
+        #params:640+10
         self.fc4 = torch.nn.Linear(64, 10)
 
     def forward(self, x):
         #非线性化relu，考虑是否可以只非线性化一层进行简化？？##
+        #re：不太建议，因为要使得非线性的程度高，一般在每个隐藏层后都添加非线性函数
         x = torch.nn.functional.relu(self.fc1(x))
         x = torch.nn.functional.relu(self.fc2(x))
         x = torch.nn.functional.relu(self.fc3(x))
