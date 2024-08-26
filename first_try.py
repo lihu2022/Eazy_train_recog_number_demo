@@ -14,17 +14,27 @@ import time
 # plt.show()
 
 class FC_Net(torch.nn.Module):
+    #初始化全连接神经网络，总参数
+    #total params：(50192+8192+640)*2=118048
     def __init__(self):
         super().__init__()
+        #输入层：将像素为28*28分辨率的照片展成一纵列，全连接到第二层network为64个神经元
+        #params：50176
         self.fc1 = torch.nn.Linear(28*28, 64)
+        #中间层：设置两层中间层都为64神经元，不改变维度大小
+        #params：8192
         self.fc2 = torch.nn.Linear(64, 64)
         self.fc3 = torch.nn.Linear(64, 64)
+        #输出层：将神经元连接到输出层，输出十个数字的概率。
+        #params:640
         self.fc4 = torch.nn.Linear(64, 10)
 
     def forward(self, x):
+        #非线性化relu，考虑是否可以只非线性化一层进行简化？？##
         x = torch.nn.functional.relu(self.fc1(x))
         x = torch.nn.functional.relu(self.fc2(x))
         x = torch.nn.functional.relu(self.fc3(x))
+        #softmax进行概率分化
         x = torch.nn.functional.softmax(self.fc4(x), dim = 1)
 
         return x
