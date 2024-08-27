@@ -46,28 +46,31 @@ class FC_Net(torch.nn.Module):
 class CNN_Net(torch.nn.Module):
     def __init__(self):
         super(CNN_Net, self).__init__()
-        # 假设输入图像是单通道的 28x28 图像
+        # 输入图像是单通道像素值为28x28 图像
         # 定义两个卷积层
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1)
+        # self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
         # 卷积后，图像的尺寸并未改变
         
         # 仅为示例，没有考虑卷积之后的具体大小变化，
         # 可能需要调整参数以符合实际大小。
-        # 加入池化层后图像尺寸为：[batch, 64, 14, 14]
+        # 加入池化层后图像尺寸为：[batch, 64, 14, 14] 
         # 接下来使用线性层，需要先将数据展平
-        self.fc1 = torch.nn.Linear(64 * 14 * 14, 64)
+        # self.fc1 = torch.nn.Linear(64 * 14 * 14, 64)
+        self.fc1 = torch.nn.Linear(4 * 14 * 14, 64)
         # self.fc2 = torch.nn.Linear(64, 64)
         # self.fc3 = torch.nn.Linear(64, 64)
         self.fc4 = torch.nn.Linear(64, 10)
 
     def forward(self, x):
         # 应用卷积层和 ReLU 非线性
-        x = torch.nn.functional.relu(self.conv1(x))
-        x = torch.nn.functional.relu(torch.nn.functional.max_pool2d(self.conv2(x), 2))
+        # x = torch.nn.functional.relu(self.conv1(x))
+        x = torch.nn.functional.relu(torch.nn.functional.max_pool2d(self.conv1(x), 2))
+        # x = torch.nn.functional.relu(torch.nn.functional.max_pool2d(self.conv2(x), 2))
         
         # 展平
-        x = x.view(-1, 64 * 14 * 14)
+        # x = x.view(-1, 64 * 14 * 14)
+        x = x.view(-1, 4 * 14 * 14)
         
         # 应用全连接层和 ReLU 非线性
         x = torch.nn.functional.relu(self.fc1(x))
