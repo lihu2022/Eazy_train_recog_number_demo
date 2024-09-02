@@ -13,6 +13,15 @@ import time
 # plt.plot(xp, yp)
 # plt.show()
 
+
+if torch.cuda.is_available():
+    device = torch.device('cuda:0')  # 使用第一个 GPU，您可以根据需要修改
+    print('Using GPU:', torch.cuda.get_device_name(device))
+else:
+    device = torch.device('cpu')
+    print('Using CPU')
+
+
 class FC_Net(torch.nn.Module):
     #初始化全连接神经网络，总参数。
     #进行修改参数，谨记神经网络的偏置项是每一层的输出层的个数，而不是跟随比例系数一样是对应输入神经元的个数，进行修改，只是为了保证模型可以不一定要过零点，从而引入更细致的拟合。
@@ -80,13 +89,14 @@ class CNN_Net(torch.nn.Module):
         # 最后一层不进行 ReLU，直接 softmax
         x = torch.nn.functional.softmax(self.fc4(x), dim=1)
 
+
         return x
     
 
 def Get_Download_data(is_train):
     to_sensor = transforms.Compose([transforms.ToTensor()])
     data_set = MNIST("./datas", is_train, transform = to_sensor, download = True)
-    return DataLoader(data_set, batch_size = 15, shuffle=True)
+    return DataLoader(data_set, batch_size = 15, shuffle=True, num_workers= 2, pin_memory=True)
 
 
 def evaluate_accuracy(test_data, net, use_cnn):
@@ -94,6 +104,8 @@ def evaluate_accuracy(test_data, net, use_cnn):
     n_total = 0
     with torch.no_grad():
         for (x, y) in test_data:
+            x = x.to(device)
+            y = y.to(device)
             if (use_cnn):
                 outputs = net.forward(x.view(-1, 1, 28, 28))
             else:
@@ -107,13 +119,18 @@ def evaluate_accuracy(test_data, net, use_cnn):
 
 
 def main(is_infer, use_cnn):
+
     train_data = Get_Download_data(is_train = True)
     test_data = Get_Download_data(is_train = False)
+
+   
 
     if (use_cnn):
         net = CNN_Net()
     else:
         net = FC_Net()
+
+    net = net.to(device)
 
     if (is_infer) :
         print("model is trained , now starting inferencing!!!!!")
@@ -123,17 +140,17 @@ def main(is_infer, use_cnn):
         print("now max params inference accuracy is : ", evaluate_accuracy(test_data, net, use_cnn))
     else:
 
-
         print("initial accuracy : ", evaluate_accuracy(test_data, net, use_cnn))
 
         optimizer = torch.optim.Adam(net.parameters(), lr = 0.001)
-
 
         max_accyracy = -1
         start_time = time.time()
         for epoch in range (3):
                 for (x, y) in train_data:
                     net.zero_grad()
+                    x = x.to(device)
+                    y = y.to(device)
                     if (use_cnn):
                         output = net.forward(x.view(-1, 1, 28, 28))
                     else:
@@ -175,6 +192,8 @@ def main(is_infer, use_cnn):
     # plt.show()
 
     for (n, (x, _)) in enumerate(test_data):
+        # n = n.to(device)
+        x = x.to(device)
         if n > 5:
             break
 
@@ -184,7 +203,7 @@ def main(is_infer, use_cnn):
             predict = torch.argmax(net.forward(x[0].view(-1, 28*28)))
 
         plt.figure(n)
-        plt.imshow(x[0].view(28, 28))
+        plt.imshow(x[0].view(28, 28).cpu().numpy())
         plt.title("prediction: " + str(int(predict)))
     plt.show()
     # os.system(["pause"])
