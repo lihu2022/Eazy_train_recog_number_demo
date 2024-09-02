@@ -97,6 +97,7 @@ def Get_Download_data(is_train):
     to_sensor = transforms.Compose([transforms.ToTensor()])
     data_set = MNIST("./datas", is_train, transform = to_sensor, download = True)
     return DataLoader(data_set, batch_size = 15, shuffle=True, num_workers= 4, pin_memory=True)
+    #best param of num_workers is 4 for this desktops
 
 
 def evaluate_accuracy(test_data, net, use_cnn):
