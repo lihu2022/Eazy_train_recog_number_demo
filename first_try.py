@@ -96,7 +96,7 @@ class CNN_Net(torch.nn.Module):
 def Get_Download_data(is_train):
     to_sensor = transforms.Compose([transforms.ToTensor()])
     data_set = MNIST("./datas", is_train, transform = to_sensor, download = True)
-    return DataLoader(data_set, batch_size = 15, shuffle=True, num_workers= 2, pin_memory=True)
+    return DataLoader(data_set, batch_size = 15, shuffle=True, num_workers= 4, pin_memory=True)
 
 
 def evaluate_accuracy(test_data, net, use_cnn):
@@ -147,6 +147,7 @@ def main(is_infer, use_cnn):
         max_accyracy = -1
         start_time = time.time()
         for epoch in range (3):
+                print(f"Epoch {epoch+1} 开始 - GPU 利用率: {torch.cuda.utilization()}%")
                 for (x, y) in train_data:
                     net.zero_grad()
                     x = x.to(device)
@@ -161,6 +162,7 @@ def main(is_infer, use_cnn):
                     optimizer.step()
 
                 end_time = time.time()
+                print(f"Epoch {epoch+1} 结束 - GPU 利用率: {torch.cuda.utilization()}%")
 
                 now_accuracy = evaluate_accuracy(test_data, net, use_cnn)
                 if (now_accuracy > max_accyracy):
