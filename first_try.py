@@ -5,6 +5,8 @@ from torchvision.datasets import MNIST
 import matplotlib.pyplot as plt
 import sys
 import time
+from PIL import Image
+import numpy as np
 # import os
 # import numpy as np
 
@@ -106,7 +108,7 @@ def evaluate_accuracy(test_data, net, use_cnn):
     return n_current / n_total
 
 
-def main(is_infer, use_cnn):
+def main(is_infer, use_cnn, use_pic_predict):
     train_data = Get_Download_data(is_train = True)
     test_data = Get_Download_data(is_train = False)
 
@@ -120,7 +122,32 @@ def main(is_infer, use_cnn):
         state_dic = torch.load('max_params.pth', weights_only= True)
         net.load_state_dict(state_dic)
         net.eval()
-        print("now max params inference accuracy is : ", evaluate_accuracy(test_data, net, use_cnn))
+        if (use_pic_predict):
+            image = Image.open("self_test_pics/num2.jpg").convert('L')
+            image = np.array(image)
+            image = 255 - image
+            image = Image.fromarray(image)
+            trans = transforms.Compose([
+                transforms.Resize((28, 28)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))
+            ])
+            image_tensor = trans(image).unsqueeze(0)
+
+            image_tensor = image_tensor.view(image_tensor.size(0), -1)
+
+            plt.imshow(image_tensor.squeeze().numpy().reshape(28,28), cmap='gray')
+            plt.title("Transformed Image")
+            plt.show()
+
+            with torch.no_grad():
+                out = net(image_tensor)
+                result = torch.argmax(out).item()
+
+            print("prediction_result is :", result)
+
+        else:
+            print("now max params inference accuracy is : ", evaluate_accuracy(test_data, net, use_cnn))
     else:
 
 
@@ -131,7 +158,7 @@ def main(is_infer, use_cnn):
 
         max_accyracy = -1
         start_time = time.time()
-        for epoch in range (3):
+        for epoch in range (8):
                 for (x, y) in train_data:
                     net.zero_grad()
                     if (use_cnn):
@@ -184,7 +211,7 @@ def main(is_infer, use_cnn):
             predict = torch.argmax(net.forward(x[0].view(-1, 28*28)))
 
         plt.figure(n)
-        plt.imshow(x[0].view(28, 28))
+        plt.imshow(x[0].view(28, 28), cmap='grey')
         plt.title("prediction: " + str(int(predict)))
     plt.show()
     # os.system(["pause"])
@@ -194,9 +221,11 @@ if __name__ == "__main__":
 
     is_infer = False
     use_cnn = False
-    if (len(sys.argv) < 3):
+    use_pic_predict = False
+    if (len(sys.argv) < 4):
         print("1.error, correct run this : python first_try.py True/False ")
         print("2. please confirm if use cnn")
+        print("3.confirm if you use your own picture to predict")
         sys.exit(1)
     
     if (sys.argv[1] == "False"):
@@ -209,8 +238,13 @@ if __name__ == "__main__":
     else:
         use_cnn = False
 
+    if (sys.argv[3] == "test_own_pic"):
+        use_pic_predict = True
+    else:
+        use_pic_predict = False
 
-    main(is_infer, use_cnn)
+
+    main(is_infer, use_cnn, use_pic_predict)
 
                 
 

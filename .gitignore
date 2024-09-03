@@ -2,3 +2,4 @@
 datas/MNIST/
 *.pth
 .vscode/
+self_test_pics/
