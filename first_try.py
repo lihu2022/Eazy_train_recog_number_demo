@@ -5,8 +5,10 @@ from torchvision.datasets import MNIST
 import matplotlib.pyplot as plt
 import sys
 import time
-from PIL import Image
+from PIL import Image, ImageDraw
 import numpy as np
+import tkinter as tk
+import io
 # import os
 # import numpy as np
 
@@ -122,8 +124,9 @@ def main(is_infer, use_cnn, use_pic_predict):
         state_dic = torch.load('max_params.pth', weights_only= True)
         net.load_state_dict(state_dic)
         net.eval()
+        test = True
         if (use_pic_predict):
-            image = Image.open("self_test_pics/num2.jpg").convert('L')
+            image = Image.open("self_test_pics/strange8.jpg").convert('L')
             image = np.array(image)
             image = 255 - image
             image = Image.fromarray(image)
@@ -132,19 +135,84 @@ def main(is_infer, use_cnn, use_pic_predict):
                 transforms.ToTensor(),
                 transforms.Normalize((0.1307,), (0.3081,))
             ])
-            image_tensor = trans(image).unsqueeze(0)
+            
+            if (test):
+                root = tk.Tk()
+                root.title("手写数字识别")
+                canvas = tk.Canvas(root, width = 280, height = 280, bg = 'white')
+                canvas.pack()
 
-            image_tensor = image_tensor.view(image_tensor.size(0), -1)
+                pic = Image.new("L", (28, 28), 255)
+                draw = ImageDraw.Draw(pic)
 
-            plt.imshow(image_tensor.squeeze().numpy().reshape(28,28), cmap='gray')
-            plt.title("Transformed Image")
-            plt.show()
+                def paint(event):
+                    x1, y1 = (event.x - 1), (event.y - 1)
+                    x2, y2 = (event.x + 1), (event.y + 1)
+                    canvas.create_oval(x1, y1, x2, y2, fill="black", width=10)
+                    draw.line([x1, y1, x2, y2], fill="black", width=10)
 
-            with torch.no_grad():
-                out = net(image_tensor)
-                result = torch.argmax(out).item()
+                def clear_canvas():
+                    canvas.delete("all")
+                    draw.rectangle((0, 0, 280, 280), fill="white")
 
-            print("prediction_result is :", result)
+                def recognize_digit():
+                    # # 调整图像大小为 28x28
+                    # resized_image = pic.resize((28, 28))
+                    # # 转换为 Tensor 并进行预处理
+                    # image_tensor = trans(resized_image).unsqueeze(0)
+                    # # 进行预测
+                    # with torch.no_grad():
+                    #     output = net(image_tensor)
+                    #     predicted_class = torch.argmax(output).item()
+
+                    # # 显示预测结果
+                    # result_label.config(text=f"预测结果：{predicted_class}")
+                    # 获取画布内容的 PostScript 表示
+                    ps = canvas.postscript(colormode='mono')
+
+                    # 将 PostScript 转换为 Pillow Image 对象
+                    image = Image.open(io.BytesIO(ps.encode('utf-8'))).convert('L')
+
+                    # 转换为 Tensor 并进行预处理
+                    image_tensor = trans(image).unsqueeze(0)
+
+                    # 展平图像张量
+                    image_tensor = image_tensor.view(image_tensor.size(0), -1)
+
+                    # 进行预测
+                    with torch.no_grad():
+                        output = net(image_tensor)
+                        predicted_class = torch.argmax(output).item()
+
+                    # 显示预测结果
+                    result_label.config(text=f"预测结果：{predicted_class}")   
+                    print(f"predict result :{predicted_class}") 
+
+                canvas.bind("<B1-Motion>", paint)
+                clear_button = tk.Button(root, text="清除", command=clear_canvas)
+                clear_button.pack()
+                recognize_button = tk.Button(root, text="识别", command=recognize_digit)
+                recognize_button.pack()
+
+                result_label = tk.Label(root, text="预测结果：") 
+                result_label.pack()
+                root.mainloop()
+
+
+            if (test == False):
+                image_tensor = trans(image).unsqueeze(0)
+
+                image_tensor = image_tensor.view(image_tensor.size(0), -1)
+
+                plt.imshow(image_tensor.squeeze().numpy().reshape(28,28), cmap='gray')
+                plt.title("Transformed Image")
+                plt.show()
+
+                with torch.no_grad():
+                    out = net(image_tensor)
+                    result = torch.argmax(out).item()
+
+                print("prediction_result is :", result)
 
         else:
             print("now max params inference accuracy is : ", evaluate_accuracy(test_data, net, use_cnn))
