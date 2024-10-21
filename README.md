@@ -1,23 +1,23 @@
 #clone
 
-mkdir project
+    mkdir project
 
-cd project
+    cd project
 
-git clone git@github.com:lihu2022/Eazy_train_recog_number_demo.git
+    git clone git@github.com:lihu2022/Eazy_train_recog_number_demo.git
 
-cd Eazy_train_recog_number_demo
+    cd Eazy_train_recog_number_demo
 
 
 #this project is a eazy demo about cnn network and linear perception
 
 ##start
 
-conda env create -n $proj_name -f env.yaml 
+    conda env create -n $proj_name -f env.yaml 
 
-conda activate $proj_name
+    conda activate $proj_name
 
-cd $your_proj_name
+    cd $your_proj_name
 
 
 ###if you have already trained this model, you can run the following command in terminal
