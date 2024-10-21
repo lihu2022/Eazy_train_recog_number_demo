@@ -1,3 +1,14 @@
+#clone
+
+mkdir project
+
+cd project
+
+git clone git@github.com:lihu2022/Eazy_train_recog_number_demo.git
+
+cd Eazy_train_recog_number_demo
+
+
 #this project is a eazy demo about cnn network and linear perception
 
 ##start
